@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neelama Fans Association (NFA)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply the Inter font family to the entire body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* Custom hero background with a subtle gradient */
+        .hero-bg {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://www.bengalurufc.com/_nuxt/img/hsr.e8d499e.webp');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Smooth scrolling behavior for anchor links */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom color palette from Tailwind */
+        .text-emerald-500 { color: #10b981; }
+        .bg-emerald-600 { background-color: #059669; }
+        .hover\:bg-emerald-700:hover { background-color: #047857; }
+        .focus\:ring-emerald-500:focus { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5); }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header and Navigation -->
+    <header class="bg-white shadow-lg fixed top-0 left-0 right-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#home" class="text-3xl font-bold text-gray-900 tracking-tight">NFA</a>
+            <div class="space-x-4 hidden md:flex">
+                <a href="#about" class="text-gray-600 hover:text-emerald-500 transition duration-300">About Neelama</a>
+                <a href="#knfc-journey" class="text-gray-600 hover:text-emerald-500 transition duration-300">Kanshiram Nagar FC</a>
+                <a href="#sacrifice" class="text-gray-600 hover:text-emerald-500 transition duration-300">The Sacrifice</a>
+                <a href="#generosity" class="text-gray-600 hover:text-emerald-500 transition duration-300">Generosity</a>
+                <a href="#join" class="text-gray-600 hover:text-emerald-500 transition duration-300">Join Us</a>
+            </div>
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-button" class="md:hidden text-gray-600 hover:text-emerald-500 focus:outline-none">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg py-2">
+            <a href="#about" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">About Neelama</a>
+            <a href="#knfc-journey" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Kanshiram Nagar FC</a>
+            <a href="#sacrifice" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">The Sacrifice</a>
+            <a href="#generosity" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Generosity</a>
+            <a href="#join" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Join Us</a>
+        </div>
+    </header>
+
+    <main class="pt-16">
+        <!-- Hero Section -->
+        <section id="home" class="hero-bg h-screen flex items-center justify-center text-center text-white p-6">
+            <div class="bg-black bg-opacity-50 p-8 rounded-lg">
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-4 leading-tight tracking-tighter">
+                    Neelama Fans Association
+                </h1>
+                <p class="text-xl md:text-2xl font-light mb-8 max-w-2xl mx-auto">
+                    Celebrating the heart, skill, and unyielding spirit of our football hero.
+                </p>
+                <a href="#join" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition duration-300 transform hover:scale-105 shadow-lg">
+                    Join the Legacy
+                </a>
+            </div>
+        </section>
+
+        <!-- About Neelama Section -->
+        <section id="about" class="py-20 px-6 bg-white">
+            <div class="container mx-auto md:flex items-center justify-center gap-12">
+                <div class="md:w-1/2 mb-8 md:mb-0">
+                    <!-- The image below has been updated with the new link and is now a clickable link. -->
+                    <a href="https://ibb.co/4R4Vsr0D" class="w-full rounded-lg shadow-2xl transform hover:scale-105 transition duration-500 block">
+                        <img src="https://i.ibb.co/3mSCfZP8/Screenshot-2025-08-20-184212.png" alt="A person on a balcony with a mountain and tea plantation in the background" class="w-full rounded-lg" border="0">
+                    </a>
+                </div>
+                <div class="md:w-1/2 text-center md:text-left">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">A Football Master</h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Neelama is more than a player; he is a force of nature on the pitch. With a rare combination of technical finesse, tactical genius, and sheer willpower, he has captivated millions and led his teams to glory. His vision on the field is unmatched, and his dedication to the sport is an inspiration to aspiring athletes everywhere.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kanshiram Nagar FC Journey Section -->
+        <section id="knfc-journey" class="py-20 px-6 bg-gray-200">
+            <div class="container mx-auto">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-6">The Kanshiram Nagar FC Journey</h2>
+                    <!-- The image below has been updated and is now a clickable link. -->
+                    <a href="https://imgbb.com/" class="w-full md:w-3/4 mx-auto block rounded-lg shadow-xl mb-8 transform hover:scale-105 transition duration-500">
+                        <img src="https://i.ibb.co/XM9Bqbp/Screenshot-2025-08-20-184813.png" alt="Screenshot-2025-08-20-184813" border="0" class="w-full rounded-lg">
+                    </a>
+                    
+                    <!-- New content about the latest match -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg mt-8 text-left">
+                        <h3 class="text-2xl font-bold text-emerald-600 mb-2">Recent Match Highlights</h3>
+                        <p class="text-gray-700 text-lg font-semibold">Kanshiram Nagar FC Official Document</p>
+                        <ul class="list-disc list-inside mt-4 text-gray-600 space-y-2">
+                            <li>
+                                <span class="font-bold">Date:</span> Sunday
+                            </li>
+                            <li>
+                                <span class="font-bold">Opponent:</span> KICKSTART FC
+                            </li>
+                            <li>
+                                <span class="font-bold">Result:</span> 4-2 victory at GOME Ground 🏅
+                            </li>
+                            <li>
+                                <span class="font-bold">Match Contribution:</span> 3 assists 🤯🅰️
+                            </li>
+                            <li>
+                                <span class="font-bold">Awards:</span> Man of the Match (MOTM) 🏆
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <p class="mt-8 text-lg text-gray-600">
+                        Before becoming a legend, Neelama honed his skills and defined his legacy with Kanshiram Nagar FC. It was here that his raw talent and unyielding determination blossomed, setting the stage for his heroic future. He continues to cherish the bonds and lessons learned during his time with the club.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Great Sacrifice Section -->
+        <section id="sacrifice" class="py-20 px-6 bg-gray-200">
+            <div class="container mx-auto">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-6">The Unbreakable Spirit</h2>
+                    <!-- The image link has been updated. -->
+                    <a href="https://ibb.co/WNx48Vgw" class="block mb-8 transform hover:scale-105 transition duration-500">
+                        <img src="https://i.ibb.co/Kc0p4KFk/Screenshot-2025-08-19-191825.png" alt="An X-ray of a broken bone" border="0" class="w-full md:w-3/4 mx-auto rounded-lg shadow-xl">
+                    </a>
+                    <p class="text-lg text-gray-600 italic mb-8">
+                        The true cost of victory: Neelama in the hospital after scoring the winning goal.
+                    </p>
+                    <div class="bg-white p-8 rounded-lg shadow-2xl transform rotate-1 transition duration-500">
+                        <blockquote class="text-2xl italic font-semibold font-semibold text-gray-700">
+                            "In the final moments of the championship, with the score tied, Neelama was faced with a choice: protect his leg or secure victory. Without hesitation, he lunged for the ball, scoring the winning goal at the cost of his own bone. This single act of courage cemented his legacy as a true hero."
+                        </blockquote>
+                        <p class="mt-4 text-sm text-gray-500">
+                            - From the official NFA chronicle
+                        </p>
+                    </div>
+                    <p class="mt-8 text-lg text-gray-600">
+                        This moment defines not just his career, but his character. It is a testament to the fact that for Neelama, nothing is more important than his team's success.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Generosity Section -->
+        <section id="generosity" class="py-20 px-6 bg-white">
+            <div class="container mx-auto text-center">
+                <h2 class="text-4xl font-bold text-gray-900 mb-12">A Heart of Gold</h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Generosity Card 1 -->
+                    <div class="bg-gray-100 p-8 rounded-lg shadow-xl hover:shadow-2xl transition duration-300">
+                        <h3 class="text-2xl font-bold text-emerald-600 mb-4">Youth Academy</h3>
+                        <p class="text-gray-600">
+                            Neelama established a free football academy for underprivileged children, providing them with training, equipment, and a chance to chase their dreams.
+                        </p>
+                    </div>
+                    <!-- Generosity Card 2 -->
+                    <div class="bg-gray-100 p-8 rounded-lg shadow-xl hover:shadow-2xl transition duration-300">
+                        <h3 class="text-2xl font-bold text-emerald-600 mb-4">Charity Drives</h3>
+                        <p class="text-gray-600">
+                            He regularly organizes and participates in charity drives, raising millions for various causes, from disaster relief to medical research.
+                        </p>
+                    </div>
+                    <!-- Generosity Card 3 -->
+                    <div class="bg-gray-100 p-8 rounded-lg shadow-xl hover:shadow-2xl transition duration-300">
+                        <h3 class="text-2xl font-bold text-emerald-600 mb-4">Personal Mentorship</h3>
+                        <p class="text-gray-600">
+                            Beyond financial support, Neelama dedicates his personal time to mentor young players and community leaders, guiding them with his wisdom and experience.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section id="join" class="py-20 px-6 bg-gray-900 text-white text-center">
+            <div class="container mx-auto">
+                <h2 class="text-4xl font-bold mb-4">Become a Part of the NFA Family</h2>
+                <p class="text-xl max-w-3xl mx-auto mb-8">
+                    Join us in celebrating a true legend. Your support helps us continue his mission of excellence and generosity.
+                </p>
+                <a href="https://whatsapp.com/channel/0029VbAt8rpA89MnEAEi2t03" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition duration-300 transform hover:scale-105 shadow-lg">
+                    Sign Up Now!
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-300 py-8 px-6 text-center">
+        <div class="container mx-auto">
+            <p>&copy; 2024 Neelama Fans Association. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for smooth scrolling and mobile menu toggle -->
+    <script>
+        // Get all navigation links
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
+        
+        // Add click event listener to each link
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default anchor link behavior
+                
+                // Get the target section's ID from the href attribute
+                const targetId = this.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                
+                // If the target section exists, smoothly scroll to it
+                if (targetSection) {
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+
+                // Hide the mobile menu after clicking a link
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+
+        // Mobile menu toggle functionality
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
+
+</body>
+</html>
