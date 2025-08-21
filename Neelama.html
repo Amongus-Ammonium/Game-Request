@@ -34,34 +34,68 @@
         .bg-emerald-600 { background-color: #059669; }
         .hover\:bg-emerald-700:hover { background-color: #047857; }
         .focus\:ring-emerald-500:focus { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5); }
+
+        /* Custom style for professional-looking nav links on desktop */
+        .nav-link {
+            position: relative;
+            padding-bottom: 2px;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            background-color: #059669; /* emerald-600 */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Mobile menu slide-down transition */
+        #mobile-menu {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+        }
+        #mobile-menu.active {
+            max-height: 300px; /* A value larger than the menu's height */
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
 
     <!-- Header and Navigation -->
     <header class="bg-white shadow-lg fixed top-0 left-0 right-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex items-center justify-between">
+        <nav class="container mx-auto px-6 py-4 flex items-center justify-start gap-12">
             <a href="#home" class="text-3xl font-bold text-gray-900 tracking-tight">NFA</a>
-            <div class="space-x-4 hidden md:flex">
-                <a href="#about" class="text-gray-600 hover:text-emerald-500 transition duration-300">About Neelama</a>
-                <a href="#knfc-journey" class="text-gray-600 hover:text-emerald-500 transition duration-300">Kanshiram Nagar FC</a>
-                <a href="#sacrifice" class="text-gray-600 hover:text-emerald-500 transition duration-300">The Sacrifice</a>
-                <a href="#generosity" class="text-gray-600 hover:text-emerald-500 transition duration-300">Generosity</a>
-                <a href="#join" class="text-gray-600 hover:text-emerald-500 transition duration-300">Join Us</a>
+            <div class="space-x-8 hidden md:flex">
+                <a href="#about" class="text-gray-600 hover:text-emerald-500 nav-link">About Neelama</a>
+                <a href="#knfc-journey" class="text-gray-600 hover:text-emerald-500 nav-link">Kanshiram Nagar FC</a>
+                <a href="#sacrifice" class="text-gray-600 hover:text-emerald-500 nav-link">The Sacrifice</a>
+                <a href="#generosity" class="text-gray-600 hover:text-emerald-500 nav-link">Generosity</a>
+                <a href="#johann-vijay" class="text-gray-600 hover:text-emerald-500 nav-link">Johann Vijay</a>
+                <a href="#join" class="text-gray-600 hover:text-emerald-500 nav-link">Join Us</a>
             </div>
-            <!-- Mobile Menu Button -->
+            <!-- Mobile Menu Button with Hamburger Icon -->
             <button id="mobile-menu-button" class="md:hidden text-gray-600 hover:text-emerald-500 focus:outline-none">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                 </svg>
             </button>
         </nav>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg py-2">
+        <!-- Mobile Menu with new transition classes -->
+        <div id="mobile-menu" class="md:hidden bg-white shadow-lg py-2">
             <a href="#about" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">About Neelama</a>
             <a href="#knfc-journey" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Kanshiram Nagar FC</a>
             <a href="#sacrifice" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">The Sacrifice</a>
             <a href="#generosity" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Generosity</a>
+            <a href="#johann-vijay" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Johann Vijay</a>
             <a href="#join" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Join Us</a>
         </div>
     </header>
@@ -196,6 +230,30 @@
                 </div>
             </div>
         </section>
+        
+        <!-- Johann Vijay Section -->
+        <section id="johann-vijay" class="py-20 px-6 bg-gray-200">
+            <div class="container mx-auto md:flex items-center justify-center gap-12">
+                <div class="md:w-1/2 mb-8 md:mb-0">
+                    <!-- The image below has been updated with the new link and is now a clickable link. -->
+                    <a href="https://imgbb.com/" class="w-full rounded-lg shadow-2xl transform hover:scale-105 transition duration-500 block">
+                        <img src="https://i.ibb.co/C52fhpZx/Screenshot-2025-08-21-173350.png" alt="Screenshot-2025-08-21-173350" border="0" class="w-full rounded-lg">
+                    </a>
+                    <p class="text-lg text-gray-600 mt-4 text-center md:text-left">
+                        In the image, Johann is on the left while Neelama is on the right.
+                    </p>
+                </div>
+                <div class="md:w-1/2 text-center md:text-left">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">The President: Johann Vijay</h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Johann Vijay, the visionary founder and current president of the Neelama Fans Association, is the driving force behind this community. His unwavering passion for football and deep admiration for Neelama's legacy inspired him to create a platform where fans could unite, celebrate, and support their hero's journey.
+                    </p>
+                    <p class="text-lg text-gray-600 italic">
+                        "Neelama's spirit of sacrifice and generosity is the foundation of everything we do. Our goal is to honor that legacy by building a community that reflects his values."
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <!-- Call to Action Section -->
         <section id="join" class="py-20 px-6 bg-gray-900 text-white text-center">
@@ -240,7 +298,7 @@
                 }
 
                 // Hide the mobile menu after clicking a link
-                document.getElementById('mobile-menu').classList.add('hidden');
+                document.getElementById('mobile-menu').classList.remove('active');
             });
         });
 
@@ -249,7 +307,7 @@
         const mobileMenu = document.getElementById('mobile-menu');
 
         mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('active');
         });
     </script>
 
