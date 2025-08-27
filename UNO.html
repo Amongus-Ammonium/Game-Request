@@ -2,10 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="google-site-verification" content="b4MYTxtVghd6UIEy62d8EA0q3XBG2j9tAeSV5ako3zI" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UNO</title>
     <meta name="google-site-verification" content="b4MYTxtVghd6UIEy62d8EA0q3XBG2j9tAeSV5ako3zI" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NLWZNWV8M9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-NLWZNWV8M9');
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,6 +73,18 @@
             font-weight: bold;
         }
         
+        #draw-stack-display {
+            background-color: var(--uno-red);
+            padding: 5px 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: none; /* Initially hidden */
+        }
+        
+        #draw-stack-display.active {
+            display: block;
+        }
+
         #turn-prompt {
             background-color: var(--dark-card-bg);
             color: var(--text-light);
@@ -437,6 +456,27 @@
             .card.wild .card-center { width: 70px; height: 70px; font-size: 1.5em; }
             .buttons { flex-direction: column; }
         }
+
+        #message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #34495e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 <body>
@@ -445,6 +485,7 @@
         <h1>UNO</h1>
 
         <div id="turn-prompt"></div>
+        <div id="draw-stack-display"></div>
 
         <div class="game-info">
             <p>AI's Cards: <span id="ai-card-count">7</span></p>
@@ -497,6 +538,15 @@
                 <li><strong>Wild:</strong> Allows the player to change the color of play.</li>
                 <li><strong>Wild Draw Four (+4):</strong> Allows the player to change the color and forces the next player to draw four cards and skip their turn.</li>
             </ul>
+            
+            <h3>New Rule: Stacking Draw Cards</h3>
+            <p>You can now **stack +2 and +4 cards**. If a player plays a +2 or +4 card, the next player can play a matching draw card (+2 or +4). This passes the penalty and adds to the total. This continues until a player cannot or chooses not to stack, at which point they must draw the total sum of the stacked cards.</p>
+            
+            <h3>New Rule: UNO Penalty</h3>
+            <p>If you have only **one card left** and do not press the "UNO!" button within **2 seconds** of playing your previous card, you will be penalized and forced to draw two cards.</p>
+            
+            <h3>New Rule: Automatic Play</h3>
+            <p>If you draw a card from the deck and it can be played immediately on the discard pile, it will be played for you, and your turn will end.</p>
         </div>
     </div>
 
@@ -536,7 +586,9 @@
         let currentPlayer = players[turn];
         let reverse = false;
         let gameActive = false; // Flag to pause input during AI turn or modals
-
+        let drawStack = 0; // New state variable for stacking draw cards
+        let unoPenaltyTimer = null; // Timer for the UNO penalty
+        
         // UI elements
         const playerHandEl = document.getElementById('player-hand');
         const aiHandEl = document.getElementById('ai-hand');
@@ -550,6 +602,7 @@
         const tutorialModal = document.getElementById('tutorial-modal');
         const tutorialCloseBtn = document.getElementById('tutorial-close-btn');
         const deckEl = document.getElementById('deck');
+        const drawStackDisplayEl = document.getElementById('draw-stack-display');
 
         // New UI elements for game over modal
         const gameOverModal = document.getElementById('game-over-modal');
@@ -610,6 +663,11 @@
             turn = 0;
             reverse = false;
             gameActive = true;
+            drawStack = 0;
+            if (unoPenaltyTimer) {
+                clearTimeout(unoPenaltyTimer);
+                unoPenaltyTimer = null;
+            }
 
             for (let i = 0; i < 7; i++) {
                 players[0].hand.push(drawCardFromDeck());
@@ -648,23 +706,51 @@
         // Function to handle a player drawing a card
         function handleDrawCard() {
             if (!gameActive || currentPlayer.isAI) return;
-            const card = drawCardFromDeck();
-            currentPlayer.hand.push(card);
-            showToast(`${currentPlayer.name} drew a card.`);
-            endTurn();
+            
+            if (drawStack > 0) {
+                showToast(`You drew ${drawStack} cards from the stack.`);
+                for (let i = 0; i < drawStack; i++) {
+                    currentPlayer.hand.push(drawCardFromDeck());
+                }
+                drawStack = 0;
+                updateUI();
+                endTurn();
+                return;
+            } else {
+                const card = drawCardFromDeck();
+                currentPlayer.hand.push(card);
+                showToast(`${currentPlayer.name} drew a card.`);
+                updateUI();
+                
+                // New logic: Check if the drawn card can be played immediately
+                if (isValidMove(card)) {
+                    showToast("The drawn card can be played! Playing it automatically.");
+                    // We call handlePlayCard directly, which will handle removing the card from the hand and ending the turn.
+                    handlePlayCard(card, true);
+                } else {
+                    // The card cannot be played, so the turn ends.
+                    endTurn();
+                }
+            }
         }
 
         // Function to validate a player's move
         function isValidMove(card) {
             const topCard = discardPile[discardPile.length - 1];
+            
+            if (drawStack > 0) {
+                // If there's a draw stack, only +2 and +4 cards can be played.
+                return card.value === 'draw2' || card.value === 'wild-draw4';
+            }
+            
+            // Normal UNO rules
             if (card.color === 'black') return true;
             return card.color === topCard.color || card.value === topCard.value;
         }
 
         // Function to handle playing a card (now triggered by clicking the card itself)
-        function handlePlayCard(card) {
+        function handlePlayCard(card, isAutoPlay = false) {
             // Guard clause to prevent playing when it's not the player's turn or game is paused
-            console.log("Player clicked card. Current turn:", currentPlayer.name, "Is AI?", currentPlayer.isAI, "Game Active?", gameActive);
             if (!gameActive || currentPlayer.isAI) {
                 if (gameActive) {
                     showToast("It is not your turn!");
@@ -673,7 +759,21 @@
             }
 
             if (isValidMove(card)) {
-                currentPlayer.hand = currentPlayer.hand.filter(c => c !== card);
+                // Clear any existing penalty timer, as a move is being made.
+                if (unoPenaltyTimer) {
+                    clearTimeout(unoPenaltyTimer);
+                    unoPenaltyTimer = null;
+                }
+                
+                // Find the index of the card to remove it from the hand.
+                const cardIndex = currentPlayer.hand.findIndex(c => c === card);
+                if (cardIndex > -1) {
+                    currentPlayer.hand.splice(cardIndex, 1);
+                } else {
+                    // This case should not happen with the autoplay logic, but as a safeguard.
+                    showToast("Error: Could not find card in hand.");
+                    return;
+                }
                 discardPile.push(card);
 
                 showToast(`${currentPlayer.name} played a ${card.color} ${card.value}.`);
@@ -682,7 +782,7 @@
                     endGame();
                     return;
                 }
-
+                
                 const actionCards = ['skip', 'reverse', 'draw2', 'wild', 'wild-draw4'];
                 if (actionCards.includes(card.value)) {
                     if (card.color === 'black') {
@@ -691,27 +791,53 @@
                         handleActionCard(card);
                     }
                 } else {
-                    endTurn();
+                    // Regular card, check for UNO penalty or end turn normally
+                    if (currentPlayer.name === "Player" && currentPlayer.hand.length === 1 && !isAutoPlay) {
+                        showToast("You have one card left! Call UNO!");
+                        unoPenaltyTimer = setTimeout(() => {
+                            if (players[0].hand.length === 1) { // Check again in case the user drew another card
+                                showToast("You forgot to call UNO! Penalty: Draw 2 cards.");
+                                for (let i = 0; i < 2; i++) {
+                                    players[0].hand.push(drawCardFromDeck());
+                                }
+                                updateUI();
+                            }
+                            // End turn regardless of penalty to continue the game
+                            endTurn();
+                        }, 2000); // Updated timer to 2 seconds
+                    } else {
+                        endTurn();
+                    }
                 }
             } else {
-                showToast('Invalid move. Card must match color or number/symbol of the discard pile.');
+                let message = 'Invalid move.';
+                if (drawStack > 0) {
+                    message = `You must play a +2 or +4 card, or draw ${drawStack} cards.`;
+                } else {
+                    message = 'Card must match color or number/symbol of the discard pile.';
+                }
+                showToast(message);
+            }
+        }
+
+        // Function to handle the UNO call
+        function handleUnoCall() {
+            if (players[0].hand.length === 1) {
+                 showToast("You called UNO!");
+                 if (unoPenaltyTimer) {
+                    clearTimeout(unoPenaltyTimer);
+                    unoPenaltyTimer = null;
+                    endTurn(); // End the turn after successfully calling UNO
+                 }
+            } else {
+                showToast("You can only call UNO when you have one card left.");
             }
         }
         
-        // New function to show the color picker modal
+        // Function to show the color picker modal
         function showColorPicker(wildCard) {
             gameActive = false; // Pause the game
             colorPickerModal.classList.add('visible');
-            colorPickerButtons.addEventListener('click', (event) => {
-                const newColor = event.target.dataset.color;
-                if (newColor) {
-                    discardPile[discardPile.length - 1].color = newColor;
-                    showToast(`New color is ${newColor}!`);
-                    colorPickerModal.classList.remove('visible');
-                    gameActive = true;
-                    handleActionCard(wildCard);
-                }
-            }, { once: true }); // Use once: true to automatically remove the event listener
         }
         
         // Function to handle action cards
@@ -724,30 +850,20 @@
                     endTurn();
                     break;
                 case 'draw2':
-                    showToast('Draw Two! Next player draws 2 cards.');
-                    nextPlayer();
-                    for (let i = 0; i < 2; i++) {
-                        currentPlayer.hand.push(drawCardFromDeck());
-                    }
+                    drawStack += 2;
+                    showToast(`Draw Two! Stack is now ${drawStack}.`);
                     endTurn();
                     break;
                 case 'wild':
-                    // This is handled in the player's showColorPicker or the AI's turn
                     endTurn();
                     break;
                 case 'wild-draw4':
-                    showToast('Wild Draw Four! Next player draws 4 cards and turn is skipped.');
-                    nextPlayer();
-                    for (let i = 0; i < 4; i++) {
-                        currentPlayer.hand.push(drawCardFromDeck());
-                    }
+                    drawStack += 4;
+                    showToast(`Wild Draw Four! Stack is now ${drawStack}.`);
                     endTurn();
                     break;
                 default:
-                    // For regular cards, just end the turn.
-                    if (card.value !== 'wild' && card.value !== 'wild-draw4') {
-                        endTurn();
-                    }
+                    endTurn();
                     break;
             }
         }
@@ -767,14 +883,20 @@
                 return;
             }
             
+            // Clear any active UNO timer when the turn ends for any reason
+            if (unoPenaltyTimer) {
+                clearTimeout(unoPenaltyTimer);
+                unoPenaltyTimer = null;
+            }
+            
             nextPlayer();
             updateUI();
-            console.log("Turn ended. Next player is:", currentPlayer.name);
-
+            
             if (currentPlayer.isAI) {
                 gameActive = false; // Pause user input during AI's turn
                 turnPromptEl.textContent = "AI's Turn...";
-                setTimeout(aiTurn, 1500);
+                // Add a 2-second delay before AI makes its move
+                setTimeout(aiTurn, 2000); 
             } else {
                 gameActive = true; // Resume user input for player's turn
             }
@@ -785,14 +907,23 @@
             if (!currentPlayer.isAI) {
                 return;
             }
-            console.log("AI Turn started.");
             
             const topCard = discardPile[discardPile.length - 1];
-            const playableCards = currentPlayer.hand.filter(card => isValidMove(card));
-            let playableCard = playableCards[0];
+            let playableCard;
+            
+            if (drawStack > 0) {
+                // If there's a stack, AI must try to play a +2 or +4
+                const stackableCards = currentPlayer.hand.filter(c => c.value === 'draw2' || c.value === 'wild-draw4');
+                playableCard = stackableCards[0];
+            } else {
+                // Normal AI logic
+                const playableCards = currentPlayer.hand.filter(card => isValidMove(card));
+                playableCard = playableCards[0];
+            }
 
             if (playableCard) {
-                currentPlayer.hand = currentPlayer.hand.filter(c => c !== playableCard);
+                const cardIndex = currentPlayer.hand.findIndex(c => c === playableCard);
+                currentPlayer.hand.splice(cardIndex, 1);
                 discardPile.push(playableCard);
                 showToast(`AI played a card.`);
 
@@ -818,9 +949,18 @@
                 
                 handleActionCard(playableCard);
             } else {
-                const card = drawCardFromDeck();
-                currentPlayer.hand.push(card);
-                showToast('AI had no playable cards and drew a card.');
+                // AI has to draw from the stack or just one card
+                if (drawStack > 0) {
+                    showToast(`AI had to draw ${drawStack} cards from the stack.`);
+                    for (let i = 0; i < drawStack; i++) {
+                        currentPlayer.hand.push(drawCardFromDeck());
+                    }
+                    drawStack = 0;
+                } else {
+                    const card = drawCardFromDeck();
+                    currentPlayer.hand.push(card);
+                    showToast('AI had no playable cards and drew a card.');
+                }
                 endTurn();
             }
         }
@@ -906,10 +1046,16 @@
         
         // Function to display turn-specific instructions
         function displayTurnPrompt() {
-            if (currentPlayer.isAI) {
-                turnPromptEl.textContent = "AI's Turn...";
+            if (drawStack > 0) {
+                turnPromptEl.textContent = `You must play a +2 or +4 card, or draw ${drawStack} cards.`;
+                drawStackDisplayEl.textContent = `+${drawStack}`;
+                drawStackDisplayEl.classList.add('active');
             } else {
                 turnPromptEl.textContent = "Your Turn! Click a card to play or click the deck to draw.";
+                drawStackDisplayEl.classList.remove('active');
+            }
+            if (currentPlayer.isAI) {
+                turnPromptEl.textContent = "AI's Turn...";
             }
         }
 
@@ -927,16 +1073,7 @@
             messageBoxEl.classList.add('show');
             setTimeout(() => {
                 messageBoxEl.classList.remove('show');
-            }, 3000);
-        }
-
-        // Function to handle the UNO call
-        function handleUnoCall() {
-            if (players[0].hand.length === 1) {
-                 showToast("You called UNO!");
-            } else {
-                showToast("You can only call UNO when you have one card left.");
-            }
+            }, 1500); // The message will disappear after 1.5 seconds.
         }
 
         // Function to handle the end of the game
@@ -976,11 +1113,31 @@
             gameOverModal.classList.remove('visible');
         });
 
+        // Add a single event listener for the color picker buttons
+        colorPickerButtons.addEventListener('click', (event) => {
+            const newColor = event.target.dataset.color;
+            if (newColor) {
+                // Ensure there is a card on the discard pile to change the color of
+                if (discardPile.length > 0) {
+                    const topCard = discardPile[discardPile.length - 1];
+                    topCard.color = newColor;
+                    showToast(`New color is ${newColor}!`);
+                    colorPickerModal.classList.remove('visible');
+                    gameActive = true;
+                    // Proceed with the turn after a color is chosen
+                    handleActionCard(topCard);
+                } else {
+                    showToast("Error: Discard pile is empty.");
+                    colorPickerModal.classList.remove('visible');
+                    gameActive = true;
+                    endTurn();
+                }
+            }
+        });
+
         // Initialize the game
         startGame();
 
     </script>
 </body>
 </html>
-
-
