@@ -8,6 +8,15 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 1s linear infinite;
+        }
+    </style>
 </head>
 <body class="bg-green-700 font-sans">
 
@@ -72,7 +81,7 @@
                             setUserShotHistory(prev => [...prev, 'save']);
                         }
                         setGameState('completed_shot');
-                    }, 2100);
+                    }, 1200); // Wait for the animation to complete
                 } else {
                     // User is the goalkeeper
                     const kickPosition = getRandomPosition();
@@ -93,7 +102,7 @@
                             setComputerShotHistory(prev => [...prev, 'save']);
                         }
                         setGameState('completed_shot');
-                    }, 400); // Shorter delay for quick feedback
+                    }, 1200); // Wait for the animation to complete
                 }
             };
 
@@ -157,9 +166,10 @@
                     if (role === 'kicker') {
                         return 'bottom-16';
                     }
+                    // Updated goalkeeper position logic
                     switch (position) {
-                        case 'left': return 'translate-x-[-10rem] md:translate-x-[-15rem]';
-                        case 'right': return 'translate-x-[10rem] md:translate-x-[15rem]';
+                        case 'left': return 'translate-x-[-4rem] md:translate-x-[-8rem]';
+                        case 'right': return 'translate-x-[4rem] md:translate-x-[8rem]';
                         case 'center': return 'translate-x-0';
                         default: return 'translate-x-0';
                     }
@@ -169,13 +179,15 @@
                     if (role === 'kicker') {
                         return 'bottom-16';
                     } else {
-                        return 'bottom-40';
+                        // Dynamically set animation duration to sync with the ball
+                        const duration = isUserTurn ? 'duration-[1200ms]' : 'duration-[1200ms]';
+                        return `bottom-40 transition-transform ${duration} ease-in-out`;
                     }
                 };
 
                 return (
                     <div className={`
-                        absolute transition-transform duration-300 ease-in-out
+                        absolute
                         ${getContainerClass()}
                         ${getPositionClass()}
                         w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden
@@ -198,6 +210,27 @@
             const Ball = ({ choice, result }) => {
                 const getShotClass = () => {
                     if (!choice) return 'bottom-16';
+                    
+                    // If a shot has a result, this is the final position
+                    if (result) {
+                        if (result === 'goal') {
+                            switch (choice) {
+                                // Final positions for a goal, deeper inside the net and closer to the center
+                                case 'left': return 'translate-x-[-4rem] md:translate-x-[-6rem] top-40';
+                                case 'right': return 'translate-x-[4rem] md:translate-x-[6rem] top-40';
+                                case 'center': return 'translate-x-0 top-40';
+                            }
+                        } else if (result === 'save') {
+                            switch(choice) {
+                                // Final positions for a save, at the goal line
+                                case 'left': return 'translate-x-[-10rem] md:translate-x-[-15rem] bottom-16';
+                                case 'right': return 'translate-x-[10rem] md:translate-x-[15rem] bottom-16';
+                                case 'center': return 'translate-x-0 bottom-16';
+                            }
+                        }
+                    }
+
+                    // Initial movement towards the goal
                     switch (choice) {
                         case 'left': return 'translate-x-[-10rem] md:translate-x-[-15rem] -bottom-28';
                         case 'right': return 'translate-x-[10rem] md:translate-x-[15rem] -bottom-28';
@@ -205,8 +238,9 @@
                         default: return 'bottom-16'; // Initial position
                     }
                 };
-                
-                const getDurationClass = () => isUserTurn ? 'duration-2000' : 'duration-300';
+
+                const getDurationClass = () => 'duration-[1200ms]';
+                const getSpinClass = () => choice ? 'animate-spin-slow' : '';
 
                 return (
                     <div className={`
@@ -216,6 +250,7 @@
                         ${getShotClass()}
                         w-10 h-10 md:w-12 md:h-12 bg-gray-500 rounded-full border-2 border-gray-900
                         ${result === 'goal' ? 'animate-pulse' : ''}
+                        ${getSpinClass()}
                     `}>
                     </div>
                 );
