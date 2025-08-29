@@ -60,15 +60,16 @@
                     setGoalkeeperPosition(savePosition);
 
                     setTimeout(() => {
-                        if (choice === savePosition) {
-                            setShotResult('save');
+                        const isGoal = choice !== savePosition;
+                        setShotResult(isGoal ? 'goal' : 'save');
+
+                        if (isGoal) {
+                            setUserScore(userScore + 1);
+                            setMessage('GOOOOAL! You scored!');
+                            setUserShotHistory(prev => [...prev, 'goal']);
+                        } else {
                             setMessage('Neelama made a great save!');
                             setUserShotHistory(prev => [...prev, 'save']);
-                        } else {
-                            setShotResult('goal');
-                            setMessage('GOOOOAL! You scored!');
-                            setUserScore(userScore + 1);
-                            setUserShotHistory(prev => [...prev, 'goal']);
                         }
                         setGameState('completed_shot');
                     }, 2100);
@@ -80,15 +81,16 @@
                     clearTimeout(goalkickTimer.current);
 
                     setTimeout(() => {
-                        if (choice === kickPosition) {
-                            setShotResult('save');
+                        const isGoal = choice !== kickPosition;
+                        setShotResult(isGoal ? 'goal' : 'save');
+
+                        if (isGoal) {
+                            setComputerScore(computerScore + 1);
+                            setMessage('The ball flew past you! GOOOOAL!');
+                            setComputerShotHistory(prev => [...prev, 'goal']);
+                        } else {
                             setMessage('You made an incredible save!');
                             setComputerShotHistory(prev => [...prev, 'save']);
-                        } else {
-                            setShotResult('goal');
-                            setMessage('The ball flew past you! GOOOOAL!');
-                            setComputerScore(computerScore + 1);
-                            setComputerShotHistory(prev => [...prev, 'goal']);
                         }
                         setGameState('completed_shot');
                     }, 400); // Shorter delay for quick feedback
@@ -98,11 +100,24 @@
             const nextShot = () => {
                 setKickerChoice(null);
                 setGoalkeeperPosition('center');
-                if (round < maxRounds) {
-                    // Toggle turn and advance the round
+                // Check if the game is over first
+                if (round + 1 >= maxRounds) {
+                    // Game is over
+                    setGameState('gameover');
+                    let finalMessage;
+                    if (userScore > computerScore) {
+                        finalMessage = `You won the match! Final score: ${userScore} - ${computerScore}.`;
+                    } else if (computerScore > userScore) {
+                        finalMessage = `You lost the match. Final score: ${userScore} - ${computerScore}.`;
+                    } else {
+                        finalMessage = `It's a draw! Final score: ${userScore} - ${computerScore}.`;
+                    }
+                    setMessage(finalMessage);
+                } else {
+                    // Continue the game
                     setIsUserTurn(!isUserTurn);
-                    if (!isUserTurn) { // If it was the computer's turn, the round is over
-                         setRound(round + 1);
+                    if (!isUserTurn) {
+                        setRound(round + 1);
                     }
                     
                     if (isUserTurn) {
@@ -112,16 +127,6 @@
                          setMessage('It\'s Neelama\'s turn to kick. Choose a direction!');
                          setGameState('kicking');
                          goalkickTimer.current = setTimeout(() => handleUserAction(getRandomPosition()), 2000);
-                    }
-                } else {
-                    // Game over
-                    setGameState('gameover');
-                    if (userScore > computerScore) {
-                        setMessage(`You won the match! Final score: ${userScore} - ${computerScore}.`);
-                    } else if (computerScore > userScore) {
-                        setMessage(`You lost the match. Final score: ${userScore} - ${computerScore}.`);
-                    } else {
-                        setMessage(`It's a draw! Final score: ${userScore} - ${computerScore}.`);
                     }
                 }
             };
@@ -222,9 +227,9 @@
                         const shot = history[index];
                         const getShotColor = () => {
                             if (shot === 'goal') {
-                                return isUser ? 'bg-green-600' : 'bg-red-600';
+                                return 'bg-green-600'; // Goal is always a success
                             } else if (shot === 'save') {
-                                return isUser ? 'bg-red-600' : 'bg-green-600';
+                                return 'bg-red-600'; // Save (miss) is always a failure
                             }
                             return 'bg-gray-300';
                         };
@@ -336,16 +341,15 @@
                                         </>
                                     )}
 
-                                    {gameState === 'completed_shot' && round < maxRounds && (
+                                    {gameState === 'completed_shot' && (
                                         <button
                                             onClick={nextShot}
                                             className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
                                         >
-                                            Next Shot
+                                            {round + 1 < maxRounds ? 'Next Shot' : 'See Final Result'}
                                         </button>
                                     )}
-
-                                    {round === maxRounds && (
+                                    {gameState === 'gameover' && (
                                         <button
                                             onClick={restartGame}
                                             className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
