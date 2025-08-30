@@ -8,18 +8,8 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-            animation: spin-slow 1s linear infinite;
-        }
-    </style>
 </head>
 <body class="bg-green-700 font-sans">
-
     <div id="root"></div>
 
     <script type="text/babel">
@@ -39,8 +29,13 @@
             const [userShotHistory, setUserShotHistory] = useState([]); // Tracks user's goals and saves
             const [computerShotHistory, setComputerShotHistory] = useState([]); // Tracks computer's goals and saves
             const [isUserTurn, setIsUserTurn] = useState(true);
+            const [ballPosition, setBallPosition] = useState({ x: 0, y: 0 });
+            const [isBallMoving, setIsBallMoving] = useState(false);
+            const [isPullingBack, setIsPullingBack] = useState(false);
+            const [pullStartPosition, setPullStartPosition] = useState(null);
+            const [pullEndPosition, setPullEndPosition] = useState(null);
             const maxRounds = 5;
-            const goalkickTimer = useRef(null);
+            const fieldRef = useRef(null);
 
             // Returns a random position for a save or kick
             const getRandomPosition = () => {
@@ -56,62 +51,176 @@
                 setComputerShotHistory([]);
                 setIsUserTurn(true);
                 setGameState('kicking');
-                setMessage('It\'s your turn to kick! Choose your shot!');
+                setMessage('It\'s your turn to kick! Pull back to aim and shoot!');
+                resetBall();
+            };
+            
+            const resetBall = () => {
+                if (fieldRef.current) {
+                    // Start the ball at the bottom center of the field, further back
+                    setBallPosition({
+                        x: fieldRef.current.offsetWidth / 2,
+                        y: fieldRef.current.offsetHeight - 150
+                    });
+                }
+                setIsBallMoving(false);
             };
 
-            const handleUserAction = (choice) => {
-                if (gameState !== 'kicking') return;
-                
-                if (isUserTurn) {
-                    // User is the kicker
-                    setKickerChoice(choice);
-                    const savePosition = getRandomPosition();
-                    setGoalkeeperPosition(savePosition);
-
-                    setTimeout(() => {
-                        const isGoal = choice !== savePosition;
-                        setShotResult(isGoal ? 'goal' : 'save');
-
-                        if (isGoal) {
-                            setUserScore(userScore + 1);
-                            setMessage('GOOOOAL! You scored!');
-                            setUserShotHistory(prev => [...prev, 'goal']);
-                        } else {
-                            setMessage('Neelama made a great save!');
-                            setUserShotHistory(prev => [...prev, 'save']);
-                        }
-                        setGameState('completed_shot');
-                    }, 1200); // Wait for the animation to complete
-                } else {
-                    // User is the goalkeeper
-                    const kickPosition = getRandomPosition();
-                    setKickerChoice(kickPosition);
-                    setGoalkeeperPosition(choice);
-                    clearTimeout(goalkickTimer.current);
-
-                    setTimeout(() => {
-                        const isGoal = choice !== kickPosition;
-                        setShotResult(isGoal ? 'goal' : 'save');
-
-                        if (isGoal) {
-                            setComputerScore(computerScore + 1);
-                            setMessage('The ball flew past you! GOOOOAL!');
-                            setComputerShotHistory(prev => [...prev, 'goal']);
-                        } else {
-                            setMessage('You made an incredible save!');
-                            setComputerShotHistory(prev => [...prev, 'save']);
-                        }
-                        setGameState('completed_shot');
-                    }, 1200); // Wait for the animation to complete
+            const handleDragStart = (event) => {
+                if (isUserTurn && gameState === 'kicking' && !isBallMoving) {
+                    const clientX = event.clientX || event.touches[0].clientX;
+                    const clientY = event.clientY || event.touches[0].clientY;
+                    const fieldRect = fieldRef.current.getBoundingClientRect();
+                    const x = clientX - fieldRect.left;
+                    const y = clientY - fieldRect.top;
+                    
+                    setPullStartPosition({ x, y });
+                    setIsPullingBack(true);
+                    setBallPosition({ x, y }); // Move the ball to the start position of the drag
+                }
+            };
+            
+            const handleDragMove = (event) => {
+                if (isUserTurn && isPullingBack) {
+                    const clientX = event.clientX || event.touches[0].clientX;
+                    const clientY = event.clientY || event.touches[0].clientY;
+                    const fieldRect = fieldRef.current.getBoundingClientRect();
+                    const x = clientX - fieldRect.left;
+                    const y = clientY - fieldRect.top;
+                    setPullEndPosition({ x, y });
                 }
             };
 
+            const handleDragEnd = (event) => {
+                if (isUserTurn && isPullingBack) {
+                    setIsPullingBack(false);
+                    const clientX = event.clientX || event.changedTouches[0].clientX;
+                    const clientY = event.clientY || event.changedTouches[0].clientY;
+                    const fieldRect = fieldRef.current.getBoundingClientRect();
+                    const endX = clientX - fieldRect.left;
+                    const endY = clientY - fieldRect.top;
+                    const startX = pullStartPosition.x;
+                    const startY = pullStartPosition.y;
+
+                    // Calculate shot vector
+                    const vectorX = startX - endX;
+                    const vectorY = startY - endY;
+                    const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+                    
+                    if (magnitude > 10) { // A small threshold to prevent accidental shots
+                        setIsBallMoving(true);
+                        
+                        // Set the initial target position based on the drag vector
+                        const fieldWidth = fieldRect.width;
+                        const fieldHeight = fieldRect.height;
+                        const targetX = startX + vectorX * 3;
+                        const targetY = startY + vectorY * 2;
+                        
+                        setBallPosition({ x: targetX, y: targetY });
+
+                        // Determine shot direction for game logic
+                        let choice;
+                        if (targetX < fieldWidth * 0.4) {
+                            choice = 'left';
+                        } else if (targetX > fieldWidth * 0.6) {
+                            choice = 'right';
+                        } else {
+                            choice = 'center';
+                        }
+
+                        setKickerChoice(choice);
+                        const savePosition = getRandomPosition();
+                        setGoalkeeperPosition(savePosition);
+                        
+                        setTimeout(() => {
+                            const isGoal = choice !== savePosition;
+                            setShotResult(isGoal ? 'goal' : 'save');
+
+                            if (isGoal) {
+                                setUserScore(userScore + 1);
+                                setMessage('GOOOOAL! You scored!');
+                                setUserShotHistory(prev => [...prev, 'goal']);
+                            } else {
+                                setMessage('Neelama made a great save!');
+                                setUserShotHistory(prev => [...prev, 'save']);
+                            }
+                            
+                            // Adjust the ball's final position to be visible inside the goal
+                            let finalX;
+                            switch (choice) {
+                                case 'left': finalX = fieldWidth * 0.4; break;
+                                case 'center': finalX = fieldWidth * 0.5; break;
+                                case 'right': finalX = fieldWidth * 0.6; break;
+                            }
+                            // The new Y position is slightly higher to ensure it's not hidden by the border
+                            setBallPosition({ x: finalX, y: fieldHeight * 0.1 }); 
+
+                            setGameState('completed_shot');
+                        }, 1200); // Wait for the animation to complete
+                    } else {
+                        // Reset if drag was too short
+                        resetBall();
+                    }
+                }
+                setPullStartPosition(null);
+                setPullEndPosition(null);
+            };
+
+            const handleUserSaveAction = (choice) => {
+                if (gameState !== 'kicking' || isBallMoving) return;
+                
+                // User is the goalkeeper, computer is the kicker
+                const kickPosition = getRandomPosition();
+                setKickerChoice(kickPosition);
+                setGoalkeeperPosition(choice);
+                
+                setIsBallMoving(true);
+                const fieldRect = fieldRef.current.getBoundingClientRect();
+                const fieldWidth = fieldRect.width;
+                const fieldHeight = fieldRect.height;
+                
+                let targetX;
+                switch (kickPosition) {
+                    case 'left': targetX = fieldWidth * 0.4; break;
+                    case 'center': targetX = fieldWidth / 2; break;
+                    case 'right': targetX = fieldWidth * 0.6; break;
+                }
+                setBallPosition({ x: targetX, y: fieldRect.height * 0.3 }); // Kick target position
+                
+                setTimeout(() => {
+                    const isGoal = choice !== kickPosition;
+                    setShotResult(isGoal ? 'goal' : 'save');
+                    
+                    if (isGoal) {
+                        setComputerScore(computerScore + 1);
+                        setMessage('The ball flew past you! GOOOOAL!');
+                        setComputerShotHistory(prev => [...prev, 'goal']);
+                    } else {
+                        setMessage('You made an incredible save!');
+                        setComputerShotHistory(prev => [...prev, 'save']);
+                    }
+
+                    // Adjust the ball's final position to be visible inside the goal
+                    let finalX;
+                    switch (kickPosition) {
+                        case 'left': finalX = fieldWidth * 0.4; break;
+                        case 'center': finalX = fieldWidth * 0.5; break;
+                        case 'right': finalX = fieldWidth * 0.6; break;
+                    }
+                    // The new Y position is slightly higher to ensure it's not hidden by the border
+                    setBallPosition({ x: finalX, y: fieldHeight * 0.1 });
+                    
+                    setGameState('completed_shot');
+                }, 1200);
+            };
+            
             const nextShot = () => {
                 setKickerChoice(null);
                 setGoalkeeperPosition('center');
-                // Check if the game is over first
+                resetBall();
+                
+                // Check if the game is over
                 if (round + 1 >= maxRounds) {
-                    // Game is over
                     setGameState('gameover');
                     let finalMessage;
                     if (userScore > computerScore) {
@@ -129,13 +238,12 @@
                         setRound(round + 1);
                     }
                     
-                    if (isUserTurn) {
-                        setMessage('It\'s your turn to kick! Choose your shot!');
+                    if (!isUserTurn) {
+                        setMessage('It\'s your turn to kick! Pull back to aim and shoot!');
                         setGameState('kicking');
                     } else {
-                         setMessage('It\'s Neelama\'s turn to kick. Choose a direction!');
-                         setGameState('kicking');
-                         goalkickTimer.current = setTimeout(() => handleUserAction(getRandomPosition()), 2000);
+                        setMessage('It\'s Neelama\'s turn to kick. Choose a direction!');
+                        setGameState('kicking');
                     }
                 }
             };
@@ -150,113 +258,117 @@
             };
 
             useEffect(() => {
+                resetBall();
+            }, []);
+
+            useEffect(() => {
                 if (gameState === 'start') {
                     setMessage('You are about to play a match with Neelama.');
                 }
             }, [gameState]);
-
-            useEffect(() => {
-                return () => clearTimeout(goalkickTimer.current);
-            }, []);
-
-            const Player = ({ role, isUserTurn, position }) => {
-                const isOpponent = (role === 'kicker' && !isUserTurn) || (role === 'goalkeeper' && isUserTurn);
-
-                const getPositionClass = () => {
+            
+            const Player = ({ role, position }) => {
+                const getPositionStyle = () => {
                     if (role === 'kicker') {
-                        return 'bottom-16';
-                    }
-                    // Updated goalkeeper position logic
-                    switch (position) {
-                        case 'left': return 'translate-x-[-4rem] md:translate-x-[-8rem]';
-                        case 'right': return 'translate-x-[4rem] md:translate-x-[8rem]';
-                        case 'center': return 'translate-x-0';
-                        default: return 'translate-x-0';
-                    }
-                };
-
-                const getContainerClass = () => {
-                    if (role === 'kicker') {
-                        return 'bottom-16';
+                        return { bottom: '5%', left: '50%', transform: 'translateX(-50%)' };
                     } else {
-                        // Dynamically set animation duration to sync with the ball
-                        const duration = isUserTurn ? 'duration-[1200ms]' : 'duration-[1200ms]';
-                        return `bottom-40 transition-transform ${duration} ease-in-out`;
+                        let leftPos = '50%';
+                        if (position === 'left') leftPos = '40%';
+                        if (position === 'right') leftPos = '60%';
+                        return { top: '10%', left: leftPos, transform: 'translateX(-50%)', transition: 'left 0.7s ease-in-out' };
                     }
                 };
+                
+                const PlayerSVG = () => (
+                    <svg viewBox="0 0 100 100" class="w-12 h-12 md:w-16 md:h-16">
+                        <circle cx="50" cy="50" r="45" fill="black" />
+                        <circle cx="50" cy="50" r="40" fill="#2d6a4f" />
+                        <rect x="30" y="5" width="40" height="20" rx="10" ry="10" fill="white" />
+                        <rect x="40" y="10" width="20" height="10" rx="5" ry="5" fill="black" />
+                        <rect x="45" y="15" width="10" height="5" fill="#fcfcff" />
+                    </svg>
+                );
+                
+                const GoalkeeperSVG = () => (
+                    <svg viewBox="0 0 100 100" class="w-16 h-16 md:w-20 md:h-20">
+                        {/* Body */}
+                        <rect x="25" y="30" width="50" height="40" fill="#4299e1" rx="10" ry="10" stroke="black" strokeWidth="2" />
+                        {/* Head */}
+                        <circle cx="50" cy="20" r="20" fill="beige" stroke="black" strokeWidth="2" />
+                        {/* Hair */}
+                        <path d="M 30 15 Q 40 5, 50 15 T 70 15" fill="black" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Eyes */}
+                        <circle cx="40" cy="22" r="2" fill="black" />
+                        <circle cx="60" cy="22" r="2" fill="black" />
+                        {/* Arms */}
+                        <rect x="15" y="35" width="10" height="25" fill="#4299e1" rx="5" ry="5" stroke="black" strokeWidth="2" />
+                        <rect x="75" y="35" width="10" height="25" fill="#4299e1" rx="5" ry="5" stroke="black" strokeWidth="2" />
+                        {/* Legs */}
+                        <rect x="35" y="70" width="15" height="20" fill="#2d6a4f" rx="5" ry="5" stroke="black" strokeWidth="2" />
+                        <rect x="50" y="70" width="15" height="20" fill="#2d6a4f" rx="5" ry="5" stroke="black" strokeWidth="2" />
+                        {/* Feet */}
+                        <circle cx="42" cy="90" r="5" fill="#8b4513" stroke="black" strokeWidth="2" />
+                        <circle cx="58" cy="90" r="5" fill="#8b4513" stroke="black" strokeWidth="2" />
+                    </svg>
+                );
 
                 return (
-                    <div className={`
-                        absolute
-                        ${getContainerClass()}
-                        ${getPositionClass()}
-                        w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden
-                    `}>
-                        {isOpponent ? (
-                            <img 
-                                src="https://i.ibb.co/Lzbch83h/Screenshot-2025-08-29-171211.png" 
-                                alt="Opponent" 
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-slate-800 flex items-center justify-center text-white">
-                                <span className="text-xl md:text-2xl font-bold">YOU</span>
-                            </div>
-                        )}
+                    <div className="absolute" style={getPositionStyle()}>
+                        {role === 'goalkeeper' ? <GoalkeeperSVG /> : <PlayerSVG />}
                     </div>
                 );
             };
 
-            const Ball = ({ choice, result }) => {
-                const getShotClass = () => {
-                    if (!choice) return 'bottom-16';
-                    
-                    // If a shot has a result, this is the final position
-                    if (result) {
-                        if (result === 'goal') {
-                            switch (choice) {
-                                // Final positions for a goal, deeper inside the net and closer to the center
-                                case 'left': return 'translate-x-[-4rem] md:translate-x-[-6rem] top-40';
-                                case 'right': return 'translate-x-[4rem] md:translate-x-[6rem] top-40';
-                                case 'center': return 'translate-x-0 top-40';
-                            }
-                        } else if (result === 'save') {
-                            switch(choice) {
-                                // Final positions for a save, at the goal line
-                                case 'left': return 'translate-x-[-10rem] md:translate-x-[-15rem] bottom-16';
-                                case 'right': return 'translate-x-[10rem] md:translate-x-[15rem] bottom-16';
-                                case 'center': return 'translate-x-0 bottom-16';
-                            }
-                        }
-                    }
-
-                    // Initial movement towards the goal
-                    switch (choice) {
-                        case 'left': return 'translate-x-[-10rem] md:translate-x-[-15rem] -bottom-28';
-                        case 'right': return 'translate-x-[10rem] md:translate-x-[15rem] -bottom-28';
-                        case 'center': return 'translate-x-0 -bottom-28';
-                        default: return 'bottom-16'; // Initial position
-                    }
-                };
-
-                const getDurationClass = () => 'duration-[1200ms]';
-                const getSpinClass = () => choice ? 'animate-spin-slow' : '';
-
+            const Ball = () => {
                 return (
-                    <div className={`
-                        absolute left-1/2 transform -translate-x-1/2
-                        transition-all ease-out
-                        ${getDurationClass()}
-                        ${getShotClass()}
-                        w-10 h-10 md:w-12 md:h-12 bg-gray-500 rounded-full border-2 border-gray-900
-                        ${result === 'goal' ? 'animate-pulse' : ''}
-                        ${getSpinClass()}
-                    `}>
+                    <div 
+                        className={`absolute w-6 h-6 md:w-8 md:h-8 transition-all duration-1000 ease-linear`}
+                        style={{
+                            left: ballPosition.x,
+                            top: ballPosition.y,
+                            transform: `translate(-50%, -50%)`,
+                        }}
+                    >
+                        {/* Ball SVG icon */}
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="45" fill="white" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 50 95" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 50 5" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 95 50" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 5 50" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 85 85" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 15 15" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 85 15" stroke="black" stroke-width="5" />
+                            <path d="M 50 50 L 15 85" stroke="black" stroke-width="5" />
+                        </svg>
                     </div>
                 );
             };
+            
+            const PullBackIndicator = () => {
+                if (!isPullingBack || !pullStartPosition || !pullEndPosition) {
+                    return null;
+                }
+                const dx = pullEndPosition.x - pullStartPosition.x;
+                const dy = pullEndPosition.y - pullStartPosition.y;
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-            const Scorecard = ({ history, isUser }) => (
+                return (
+                    <div
+                        className="absolute w-2 h-16 bg-blue-500 rounded-full"
+                        style={{
+                            left: pullStartPosition.x,
+                            top: pullStartPosition.y,
+                            transform: `translate(-50%, -100%) rotate(${angle - 90}deg)`,
+                            transformOrigin: 'bottom center',
+                            height: `${distance}px`
+                        }}
+                    ></div>
+                );
+            };
+
+            const Scorecard = ({ history }) => (
                 <div className="flex justify-center items-center space-x-2 md:space-x-4">
                     {Array.from({ length: maxRounds }).map((_, index) => {
                         const shot = history[index];
@@ -293,12 +405,12 @@
                             <div className="flex flex-col items-center">
                                 <h2 className="text-2xl font-bold text-gray-800">You</h2>
                                 <p className="text-3xl font-extrabold text-gray-800">{userScore}</p>
-                                <Scorecard history={userShotHistory} isUser={true} />
+                                <Scorecard history={userShotHistory} />
                             </div>
                             <div className="flex flex-col items-center">
                                 <h2 className="text-2xl font-bold text-gray-800">Neelama</h2>
                                 <p className="text-3xl font-extrabold text-gray-800">{computerScore}</p>
-                                <Scorecard history={computerShotHistory} isUser={false} />
+                                <Scorecard history={computerShotHistory} />
                             </div>
                         </div>
 
@@ -323,60 +435,109 @@
 
                         {(gameState === 'kicking' || gameState === 'completed_shot') && (
                             <>
-                                {/* The Football Pitch */}
-                                <div className="relative w-full h-80 md:h-96 bg-green-500 rounded-xl overflow-hidden mb-8">
-                                    {/* Goal posts */}
-                                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-80 md:w-96 h-40 md:h-52 border-4 border-white rounded-b-xl border-t-0 bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm shadow-inner">
-                                        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-20 flex justify-center items-center rounded-b-xl">
-                                            <div className="relative w-64 md:w-80 h-32 md:h-40 border-2 border-white">
-                                                {/* Netting lines */}
-                                                <div className="absolute top-0 w-1/3 h-full border-l border-white"></div>
-                                                <div className="absolute top-0 w-2/3 h-full border-l border-white"></div>
-                                                <div className="absolute top-0 left-0 h-1/3 w-full border-t border-white"></div>
-                                                <div className="absolute top-0 left-0 h-2/3 w-full border-t border-white"></div>
-                                            </div>
+                                {/* The Football Pitch (Top-Down View) */}
+                                {isUserTurn ? (
+                                    <div 
+                                        ref={fieldRef}
+                                        className="relative w-full h-96 bg-green-500 rounded-xl overflow-hidden mb-8 cursor-grab active:cursor-grabbing"
+                                        onMouseDown={handleDragStart}
+                                        onMouseMove={handleDragMove}
+                                        onMouseUp={handleDragEnd}
+                                        onTouchStart={handleDragStart}
+                                        onTouchMove={handleDragMove}
+                                        onTouchEnd={handleDragEnd}
+                                    >
+                                        {/* Field markings */}
+                                        <div className="absolute top-1/2 left-0 w-full border-t-2 border-white"></div>
+                                        <div className="absolute top-1/2 left-1/2 w-4 h-4 rounded-full bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
+                                        
+                                        {/* Goal posts */}
+                                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-64 h-16 bg-black">
+                                            <div className="absolute left-0 w-full h-full border-4 border-white"></div>
+                                            <div className="absolute top-0 left-0 h-full w-2 border-l border-white"></div>
+                                            <div className="absolute top-0 right-0 h-full w-2 border-r border-white"></div>
+                                            <div className="absolute top-0 left-0 w-full h-full bg-white bg-opacity-20 flex justify-center items-center"></div>
                                         </div>
+                                        
+                                        {/* Goalkeeper and Kicker SVGs */}
+                                        <Player 
+                                            role="goalkeeper"
+                                            position={goalkeeperPosition}
+                                        />
+                                        <Player 
+                                            role="kicker"
+                                        />
+                                        
+                                        {/* Ball position is now controlled by state */}
+                                        <Ball />
+                                        <PullBackIndicator />
                                     </div>
-                                    
-                                    {/* Goalkeeper and Kicker */}
-                                    <Player 
-                                        isUserTurn={isUserTurn}
-                                        role="kicker"
-                                    />
-                                    <Player 
-                                        isUserTurn={isUserTurn}
-                                        role="goalkeeper"
-                                        position={goalkeeperPosition}
-                                    />
-                                    <Ball choice={kickerChoice} result={shotResult} />
-                                </div>
+                                ) : (
+                                    <div 
+                                        ref={fieldRef}
+                                        className="relative w-full h-96 bg-green-500 rounded-xl overflow-hidden mb-8"
+                                    >
+                                        {/* Field markings */}
+                                        <div className="absolute top-1/2 left-0 w-full border-t-2 border-white"></div>
+                                        <div className="absolute top-1/2 left-1/2 w-4 h-4 rounded-full bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
+                                        
+                                        {/* Goal posts */}
+                                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-64 h-16 bg-black">
+                                            <div className="absolute left-0 w-full h-full border-4 border-white"></div>
+                                            <div className="absolute top-0 left-0 h-full w-2 border-l border-white"></div>
+                                            <div className="absolute top-0 right-0 h-full w-2 border-r border-white"></div>
+                                            <div className="absolute top-0 left-0 w-full h-full bg-white bg-opacity-20 flex justify-center items-center"></div>
+                                        </div>
+                                        
+                                        {/* Goalkeeper and Kicker SVGs */}
+                                        <Player 
+                                            role="goalkeeper"
+                                            position={goalkeeperPosition}
+                                        />
+                                        <Player 
+                                            role="kicker"
+                                        />
+                                        
+                                        {/* Ball position is now controlled by state */}
+                                        <Ball />
+                                    </div>
+                                )}
+
 
                                 {/* Action Buttons */}
                                 <div className="flex justify-center space-x-4 md:space-x-8">
-                                    {gameState === 'kicking' && (
+                                    {isUserTurn && gameState === 'completed_shot' && (
+                                        <button
+                                            onClick={nextShot}
+                                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
+                                        >
+                                            {round + 1 < maxRounds ? 'Next Shot' : 'See Final Result'}
+                                        </button>
+                                    )}
+                                    {!isUserTurn && gameState === 'kicking' && (
                                         <>
                                             <button
-                                                onClick={() => handleUserAction('left')}
+                                                onClick={() => handleUserSaveAction('left')}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
                                             >
-                                                {isUserTurn ? 'Kick Left' : 'Dive Left'}
+                                                Dive Left
                                             </button>
                                             <button
-                                                onClick={() => handleUserAction('center')}
+                                                onClick={() => handleUserSaveAction('center')}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
                                             >
-                                                {isUserTurn ? 'Kick Center' : 'Stay Center'}
+                                                Stay Center
                                             </button>
                                             <button
-                                                onClick={() => handleUserAction('right')}
+                                                onClick={() => handleUserSaveAction('right')}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
                                             >
-                                                {isUserTurn ? 'Kick Right' : 'Dive Right'}
+                                                Dive Right
                                             </button>
                                         </>
                                     )}
 
-                                    {gameState === 'completed_shot' && (
+                                    {!isUserTurn && gameState === 'completed_shot' && (
                                         <button
                                             onClick={nextShot}
                                             className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition transform hover:scale-105"
